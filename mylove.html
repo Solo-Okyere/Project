@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Thought for You</title>
+    <style>
+        :root {
+            --bg-color: #050510; /* Deep midnight blue */
+            --text-color: #f0f0f5;
+            --accent-gold: #ffd700;
+            --accent-rose: #ff4d6d;
+            --font-display: 'Georgia', 'Times New Roman', serif;
+            --font-body: 'Helvetica Neue', 'Arial', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Prevent scrolling */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-body);
+        }
+
+        /* --- Canvas Layer --- */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* --- UI Layer --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none; /* Let clicks pass through to canvas if needed, mostly visual */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* --- Intro Screen --- */
+        #intro-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s ease-in-out;
+            pointer-events: auto;
+        }
+
+        #intro-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .intro-text {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            letter-spacing: 1px;
+            animation: fadeIn 2s ease;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: var(--text-color);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            font-family: var(--font-body);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .start-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-rose);
+            box-shadow: 0 0 15px rgba(255, 77, 109, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* --- Content Text --- */
+        #content-text {
+            opacity: 0;
+            transition: opacity 2s ease;
+            max-width: 600px;
+            background: rgba(5, 5, 16, 0.4); /* Subtle backdrop for readability */
+            padding: 2rem;
+            border-radius: 10px;
+            /* Glassmorphism border */
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+
+        #content-text.visible {
+            opacity: 1;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #fff, var(--accent-rose));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(255, 77, 109, 0.3);
+        }
+
+        p.message {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #d1d1e0;
+            margin-bottom: 1rem;
+            min-height: 1.8em; /* Prevent layout shift */
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: var(--accent-rose);
+            margin-left: 2px;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 0.8; transform: translateY(0); }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .start-btn { padding: 12px 30px; font-size: 1rem; }
+            #content-text { padding: 1.5rem; width: 90%; }
+            p.message { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas for Stars and Heart Particles -->
+    <div id="canvas-container">
+        <canvas id="heartCanvas"></canvas>
+    </div>
+
+    <!-- Initial Intro Overlay -->
+    <div id="intro-screen">
+        <div class="intro-text">A small gift for you</div>
+        <button class="start-btn" id="startBtn">Tap to Open 💖</button>
+    </div>
+
+    <!-- Main Message Overlay -->
+    <div id="ui-layer">
+        <div id="content-text">
+            <h1 id="name-display">My Dearest</h1>
+            <div id="message-container">
+                <!-- Message will be typed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * CONFIGURATION
+         * Change this name to personalize the experience.
+         */
+        const herName = "Sarah"; // <--- EDIT NAME HERE
+        
+        // The heartfelt message broken into lines/segments for typing effect
+        const messageLines = [
+            "My heart beats a little differently when you are near.",
+            "I know that true affection is a journey, not a demand.",
+            "I offer this not to rush you, but simply to remind you that you are cherished.",
+            "Whenever you are ready, I will be here."
+        ];
+
+        // --- Elements ---
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+        const introScreen = document.getElementById('intro-screen');
+        const startBtn = document.getElementById('startBtn');
+        const contentText = document.getElementById('content-text');
+        const nameDisplay = document.getElementById('name-display');
+        const msgContainer = document.getElementById('message-container');
+
+        // --- State Variables ---
+        let width, height;
+        let particles = [];
+        let stars = [];
+        let animationId;
+        let isAnimating = false;
+        
+        // Heart parameters
+        const heartColor = "#ff4d6d";
+        const heartGlow = "#ff8fa3";
+        
+        // Set the name
+        nameDisplay.innerText = herName;
+
+        // --- Resize Handling ---
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initStars(); // Re-scatter stars on resize
+        }
+        window.addEventListener('resize', resize);
+
+        // --- Math & Utilities ---
+        // Parametric Heart Equation
+        // x = 16 * sin(t)^3
+        // y = 13 * cos(t) - 5 * cos(2t) - 2 * cos(3t) - cos(4t)
+        function getHeartPosition(t, scale = 10) {
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+            return {
+                x: x * scale + width / 2,
+                y: y * scale + height / 2
+            };
+        }
+
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // --- Classes ---
+
+        class Star {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 1.5;
+                this.alpha = Math.random();
+                this.alphaChange = (Math.random() * 0.02) - 0.01; 
+            }
+
+            update() {
+                this.alpha += this.alphaChange;
+                if (this.alpha <= 0 || this.alpha >= 1) {
+                    this.alphaChange *= -1;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Particle {
+            constructor() {
+                // Random start position off-screen or scattered
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                
+                // Target is somewhere on the heart curve
+                this.t = Math.random() * Math.PI * 2; // Random angle
+                // Scale depends on screen size (responsive heart)
+                const scale = Math.min(width, height) / 35; 
+                const targetPos = getHeartPosition(this.t, scale);
+                
+                this.targetX = targetPos.x;
+                this.targetY = targetPos.y;
+                
+                // Add some randomness to the target so it's not a perfect thin line
+                // We create a "cloud" around the line
+                const spread = Math.random() * 10;
+                this.targetX += (Math.random() - 0.5) * spread;
+                this.targetY += (Math.random() - 0.5) * spread;
+
+                // Physics
+                this.vx = 0;
+                this.vy = 0;
+                this.friction = 0.92;
+                this.ease = 0.03 + Math.random() * 0.02; // Random speed of convergence
+                
+                // Appearance
+                this.size = Math.random() * 2 + 0.5;
+                // Color variation: mostly pink/rose, some white/gold
+                const rand = Math.random();
+                if(rand > 0.9) this.color = "#ffd700"; // Gold accents
+                else if (rand > 0.6) this.color = "#ff8fa3"; // Light pink
+                else this.color = "#ff4d6d"; // Main pink
+            }
+
+            update(pulseScale) {
+                // Calculate distance to target
+                const dx = this.targetX - width/2; // Relative to center
+                const dy = this.targetY - height/2;
+                
+                // Apply pulsing to the target position
+                const currentTargetX = (width / 2) + dx * pulseScale;
+                const currentTargetY = (height / 2) + dy * pulseScale;
+
+                // Move towards target
+                this.vx += (currentTargetX - this.x) * this.ease;
+                this.vy += (currentTargetY - this.y) * this.ease;
+                
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // --- Initialization ---
+
+        function initStars() {
+            stars = [];
+            const starCount = Math.floor((width * height) / 4000); // Density
+            for (let i = 0; i < starCount; i++) {
+                stars.push(new Star());
+            }
+        }
+
+        function initHeart() {
+            particles = [];
+            // Number of particles for the heart
+            const particleCount = width < 600 ? 400 : 800; 
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            // 1. Draw Stars
+            stars.forEach(star => {
+                star.update();
+                star.draw();
+            });
+
+            // 2. Draw Heart Particles
+            // Create a "breathing" effect
+            const time = Date.now() * 0.002;
+            const pulse = 1 + Math.sin(time) * 0.05; // Scale between 0.95 and 1.05
+
+            // Add a subtle glow effect
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = heartGlow;
+
+            particles.forEach(p => {
+                p.update(pulse);
+                p.draw();
+            });
+
+            ctx.shadowBlur = 0; // Reset glow for next frame performance
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // --- Text Typing Effect ---
+        async function typeText(lines) {
+            // Create a paragraph for each line
+            for (let i = 0; i < lines.length; i++) {
+                const p = document.createElement('p');
+                p.className = 'message';
+                msgContainer.appendChild(p);
+                
+                const text = lines[i];
+                for (let char of text) {
+                    const span = document.createElement('span');
+                    span.textContent = char;
+                    p.appendChild(span);
+                    // Randomize typing speed slightly for human feel
+                    await new Promise(r => setTimeout(r, 30 + Math.random() * 50));
+                }
+                
+                // Pause between lines
+                await new Promise(r => setTimeout(r, 600));
+            }
+            // Remove cursor if desired, or keep it blinking
+        }
+
+        // --- Interaction Logic ---
+
+        startBtn.addEventListener('click', () => {
+            // 1. Hide Intro
+            introScreen.classList.add('hidden');
+            
+            // 2. Start Animation
+            resize(); // Ensure correct size
+            initStars();
+            initHeart();
+            isAnimating = true;
+            animate();
+
+            // 3. Show Content Text Container after a short delay
+            setTimeout(() => {
+                contentText.classList.add('visible');
+                // 4. Start Typing Message
+                typeText(messageLines);
+            }, 1500); // 1.5s delay to let particles gather slightly
+        });
+
+        // Initial setup
+        resize();
+        // Draw one frame of stars so it's not totally black behind intro
+        stars.forEach(s => s.draw());
+
+    </script>
+</body>
+</html>

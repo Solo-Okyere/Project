@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>For You ❤️</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      background: radial-gradient(circle at top, #1b1f3b, #0a0a15);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 20px;
+      max-width: 90%;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      margin-bottom: 10px;
+      opacity: 0;
+      animation: fadeIn 2s ease forwards;
+      animation-delay: 2s;
+    }
+
+    .message {
+      font-size: clamp(1rem, 3.5vw, 1.2rem);
+      line-height: 1.6;
+      opacity: 0;
+      animation: fadeIn 2s ease forwards;
+      animation-delay: 4s;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 26px;
+      font-size: 1rem;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, #ff4b7d, #ff0844);
+      color: white;
+      box-shadow: 0 0 20px rgba(255, 75, 125, 0.6);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(255, 75, 125, 0.9);
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="canvas"></canvas>
+
+  <div class="container">
+    <button id="startBtn">Click to Begin 💖</button>
+
+    <h1 id="nameText" class="hidden">For ❤️ <span id="herName"></span></h1>
+
+    <p class="message hidden" id="loveMessage"></p>
+  </div>
+
+  <script>
+    /* ==========================
+       EDIT THESE VALUES
+    ========================== */
+    const HER_NAME = "Your Name Here";
+
+    const MESSAGE = `
+      I just want you to know this —
+      there is no rush, no pressure, and no expectations.
+
+      I admire who you are, the way you think,
+      and the calm you bring into my world.
+
+      If one day you choose to walk this path with me,
+      I’ll be grateful.
+      And if not, I’ll still respect you deeply.
+
+      This is simply my heart, being honest.
+      Happy Valentine’s Day ❤️
+    `;
+    /* ========================== */
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    let t = 0;
+    let running = false;
+
+    function heartFunction(angle) {
+      const x = 16 * Math.pow(Math.sin(angle), 3);
+      const y =
+        13 * Math.cos(angle) -
+        5 * Math.cos(2 * angle) -
+        2 * Math.cos(3 * angle) -
+        Math.cos(4 * angle);
+      return { x, y };
+    }
+
+    function drawHeart() {
+      if (!running) return;
+
+      ctx.fillStyle = "rgba(10, 10, 20, 0.15)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.scale(12, -12);
+
+      ctx.beginPath();
+      for (let a = 0; a <= Math.PI * 2; a += 0.01) {
+        const { x, y } = heartFunction(a);
+        ctx.lineTo(x, y);
+      }
+
+      ctx.strokeStyle = `rgba(255, 80, 120, 0.8)`;
+      ctx.lineWidth = 0.15;
+      ctx.shadowColor = "#ff4b7d";
+      ctx.shadowBlur = 20;
+      ctx.stroke();
+      ctx.restore();
+
+      requestAnimationFrame(drawHeart);
+    }
+
+    const startBtn = document.getElementById("startBtn");
+    const nameText = document.getElementById("nameText");
+    const herNameSpan = document.getElementById("herName");
+    const loveMessage = document.getElementById("loveMessage");
+
+    startBtn.addEventListener("click", () => {
+      running = true;
+      startBtn.classList.add("hidden");
+
+      herNameSpan.textContent = HER_NAME;
+      loveMessage.textContent = MESSAGE;
+
+      nameText.classList.remove("hidden");
+      loveMessage.classList.remove("hidden");
+
+      drawHeart();
+    });
+  </script>
+
+</body>
+</html>

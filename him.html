@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>For You 💖</title>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+        height: 100vh;
+        background: radial-gradient(circle at top, #1a0033, #000);
+        color: #fff;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .container {
+        text-align: center;
+        padding: 20px;
+        max-width: 500px;
+        width: 100%;
+    }
+
+    button {
+        padding: 12px 28px;
+        border-radius: 30px;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        margin: 10px;
+        background: linear-gradient(135deg, #6a5acd, #4169e1);
+        color: white;
+        box-shadow: 0 0 15px rgba(138,43,226,0.7);
+        transition: transform 0.2s;
+    }
+
+    button:hover {
+        transform: scale(1.05);
+    }
+
+    canvas {
+        margin: 20px auto;
+        display: none;
+    }
+
+    h1 {
+        margin-bottom: 10px;
+        opacity: 0;
+        animation: fadeIn 2s forwards;
+    }
+
+    #text {
+        margin-top: 15px;
+        font-size: 15px;
+        line-height: 1.6;
+        min-height: 140px;
+    }
+
+    #choices {
+        display: none;
+    }
+
+    #result img {
+        max-width: 200px;
+        border-radius: 20px;
+        margin-top: 15px;
+        box-shadow: 0 0 25px rgba(138,43,226,0.8);
+    }
+
+    @keyframes fadeIn {
+        to { opacity: 1; }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <button id="startBtn">Click to Begin 💖</button>
+
+    <h1 id="name">HER_NAME</h1>
+
+    <canvas id="heart" width="300" height="300"></canvas>
+
+    <div id="text"></div>
+
+    <div id="choices">
+        <button onclick="yes()">Yes 💖</button>
+        <button onclick="no()">No</button>
+    </div>
+
+    <div id="result"></div>
+
+    <audio id="music" src="love.mp3"></audio>
+</div>
+
+<script>
+const message = `I didn’t create this to pressure your heart.
+I created it to show you how gently I hold it.
+
+If love is a choice, then today I’m choosing you —
+and I’d be honored if one day you choose me too.
+
+I can’t promise perfection,
+but I promise sincerity, patience, and care.`;
+
+const textEl = document.getElementById("text");
+const canvas = document.getElementById("heart");
+const ctx = canvas.getContext("2d");
+let i = 0;
+let t = 0;
+
+document.getElementById("startBtn").onclick = () => {
+    document.getElementById("startBtn").style.display = "none";
+    document.getElementById("name").style.opacity = 1;
+    canvas.style.display = "block";
+    drawHeart();
+    typeText();
+};
+
+function typeText() {
+    if (i < message.length) {
+        textEl.innerHTML += message[i] === "\n" ? "<br>" : message[i];
+        i++;
+        setTimeout(typeText, 40);
+    } else {
+        setTimeout(() => {
+            textEl.innerHTML += "<br><br><b>Would you like to be my girlfriend?</b>";
+            document.getElementById("choices").style.display = "block";
+        }, 800);
+    }
+}
+
+function drawHeart() {
+    ctx.clearRect(0,0,300,300);
+    ctx.beginPath();
+    for (let a = 0; a < Math.PI * 2; a += 0.01) {
+        let x = 16 * Math.pow(Math.sin(a), 3);
+        let y = 13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a);
+        ctx.lineTo(150 + x*6, 150 - y*6);
+    }
+    ctx.strokeStyle = `rgba(138,43,226,0.8)`;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "#7b68ee";
+    ctx.stroke();
+    t += 0.01;
+    requestAnimationFrame(drawHeart);
+}
+
+function yes() {
+    document.getElementById("choices").style.display = "none";
+    document.getElementById("music").play();
+    document.getElementById("result").innerHTML = `
+        <p>Thank you for accepting my proposal.</p>
+        <p>I will always try my best to be the man you dream of.</p>
+        <p>I will stand by your side and choose you every day.</p>
+        <img src="her.jpg" alt="Her Photo">
+    `;
+}
+
+function no() {
+    document.getElementById("choices").style.display = "none";
+    document.getElementById("result").innerHTML = `
+        <div style="font-size:60px">💔😢</div>
+    `;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Moment for Us</title>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&family=Montserrat:wght@300&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg-color: #05070a;
+    --heart-color: #ff4d6d;
+    --text-color: #f8edeb;
+    --glow: rgba(255, 77, 109, 0.5);
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-color);
+}
+
+#canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Overlay Styles */
+.overlay {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+    max-width: 600px;
+    transition: opacity 1.5s ease;
+}
+
+#start-screen {
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 40px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(5px);
+}
+
+#main-content {
+    display: none;
+    opacity: 0;
+}
+
+h1 {
+    font-family: 'Dancing Script', cursive;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 20px var(--glow);
+}
+
+p {
+    line-height: 1.8;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: rgba(248, 237, 235, 0.9);
+}
+
+/* Typing cursor */
+#typingText::after {
+    content: "|";
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Button Styles */
+.btn-start {
+    background: rgba(255, 77, 109, 0.08);
+    border: 1px solid rgba(255, 77, 109, 0.4);
+    color: var(--text-color);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    padding: 14px 40px;
+    border-radius: 50px;
+    backdrop-filter: blur(6px);
+    transition: all 0.4s ease;
+    box-shadow: 0 0 15px rgba(255, 77, 109, 0.2);
+    position: relative;
+    overflow: hidden;
+    animation: buttonPulse 2s infinite ease-in-out;
+}
+
+.btn-start:hover {
+    background: rgba(255, 77, 109, 0.2);
+    letter-spacing: 3px;
+    transform: translateY(-3px);
+    box-shadow: 0 0 25px rgba(255, 77, 109, 0.5);
+}
+
+.btn-start::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50px;
+    box-shadow: 0 0 20px rgba(255, 77, 109, 0.4);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.btn-start:hover::after {
+    opacity: 1;
+}
+
+@keyframes buttonPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(255, 77, 109, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(255, 77, 109, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(255, 77, 109, 0.2);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="canvas-container">
+    <canvas id="heartCanvas"></canvas>
+</div>
+
+<div id="start-screen" class="overlay">
+    <button class="btn-start" onclick="initExperience()">Open My Heart 💖</button>
+</div>
+
+<div id="main-content" class="overlay">
+    <h1 id="userName">For [Her Name]</h1>
+    <div id="message">
+        <p id="typingText"></p>
+        <p style="font-style: italic; margin-top: 20px; font-size: 0.9rem;">
+            Happy Valentine’s Day.
+        </p>
+    </div>
+</div>
+
+<script>
+// Canvas Setup
+const canvas = document.getElementById('heartCanvas');
+const ctx = canvas.getContext('2d');
+let animationFrame;
+let time = 0;
+
+// Configuration
+const herName = "Cherry_McFrimps"; // <-- Edit her name here
+document.getElementById('userName').innerText = `For ${herName}`;
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+// Heart Math Function
+function getHeartPoint(t) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+    return { x, y };
+}
+
+// 🌹 Flying Roses Configuration
+const roses = [];
+const roseCount = 50;
+
+class Rose {
+    constructor() { this.reset(); }
+
+    reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * -canvas.height;
+        this.size = Math.random() * 20 + 15;
+        this.speedY = Math.random() * 1 + 0.5;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.opacity = Math.random() * 0.5 + 0.5;
+    }
+
+    update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        if (this.y > canvas.height) this.reset(), this.y = -20;
+    }
+
+    draw() {
+        ctx.globalAlpha = this.opacity;
+        ctx.font = `${this.size}px serif`;
+        ctx.fillText("🌹", this.x, this.y);
+        ctx.globalAlpha = 1;
+    }
+}
+
+// Create roses
+for (let i = 0; i < roseCount; i++) roses.push(new Rose());
+
+// Draw Function
+function draw() {
+    // Dark night sky
+    ctx.fillStyle = 'rgba(5,7,10,0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2 - 20;
+    const scale = Math.min(canvas.width, canvas.height) / 45;
+
+    // Heart pulse
+    const pulse = 1 + 0.05 * Math.sin(time*2);
+    ctx.beginPath();
+    ctx.strokeStyle = '#ff4d6d';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = '#ff4d6d';
+
+    for (let t = 0; t <= Math.PI*2; t += 0.01) {
+        const point = getHeartPoint(t);
+        const drawX = centerX + point.x * scale * pulse;
+        const drawY = centerY + point.y * scale * pulse;
+        t === 0 ? ctx.moveTo(drawX, drawY) : ctx.lineTo(drawX, drawY);
+    }
+    ctx.stroke();
+
+    // Star particles
+    if (Math.random() > 0.9) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 1, 1);
+    }
+
+    // Draw roses
+    roses.forEach(rose => { rose.update(); rose.draw(); });
+
+    time += 0.02;
+    animationFrame = requestAnimationFrame(draw);
+}
+
+// ✍🏾 Typing Effect
+const fullMessage = `In the quiet space between a question and an answer,
+I want you to know that my heart is at peace.
+I value you not just for the future I hope for,
+but for the incredible person you are today.
+
+.
+My affection for you isn't a race; it's a promise
+to be here, respecting your journey and your heart.`;
+
+let charIndex = 0;
+const typingSpeed = 40;
+
+function typeWriter() {
+    const typingElement = document.getElementById("typingText");
+    if (charIndex < fullMessage.length) {
+        typingElement.innerHTML += fullMessage.charAt(charIndex) === "\n" ? "<br><br>" : fullMessage.charAt(charIndex);
+        charIndex++;
+        setTimeout(typeWriter, typingSpeed);
+    }
+}
+
+// Initialize Experience
+function initExperience() {
+    document.getElementById('start-screen').style.display = 'none';
+    const mainContent = document.getElementById('main-content');
+    mainContent.style.display = 'block';
+    setTimeout(() => mainContent.style.opacity = '1', 100);
+
+    draw();
+    typeWriter();
+}
+</script>
+
+</body>
+</html>
